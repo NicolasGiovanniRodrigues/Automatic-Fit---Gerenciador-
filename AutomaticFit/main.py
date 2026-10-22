@@ -1,15 +1,18 @@
 # Importações
 # Ferramentas para aplicação, páginas, formulários, navegação, mensagens e sessão.
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file
+
 # Driver usado para conectar o Python ao Firebird.
 import fdb
+
 # Funções para gerar e conferir o hash das senhas.
 from werkzeug.security import generate_password_hash, check_password_hash
+
 # Compatibilidade com as senhas antigas salvas em Bcrypt.
 from flask_bcrypt import Bcrypt
+
 # Geração de relatórios em PDF, conforme o exemplo da professora.
 from fpdf import FPDF
-
 
 # Aplicação e banco de dados
 app = Flask(__name__)
@@ -19,17 +22,16 @@ bcrypt = Bcrypt(app)
 
 # Execute na pasta do main.py ou informe o caminho completo do banco simplificado.
 host = 'localhost'
-database = r'C:\Users\Aluno\Downloads\AutomaticFit-Recente\AutomaticFit\BANCO.FDB'
-user = 'SYSDBA'
+database = 'BANCO.FDB'
+user = 'sysdba'
 password = 'sysdba'
 
 # Abre a conexão usada pelas consultas e gravações do sistema.
 con = fdb.connect(host=host, database=database, user=user, password=password, charset='UTF8')
 
 
-# Datas e horários com validação manual
-# O relógio vem do Firebird; os cálculos abaixo usam textos e números.
-# Consulta a data e a hora do Firebird, sem importar uma biblioteca de datas.
+# Datas e horários
+# Consulta o relógio do Firebird para validar idade e horários das aulas.
 def momento_atual():
     cursor = con.cursor()
     try:
@@ -140,12 +142,12 @@ def validar_senha(senha):
         return False
 
 
-# Mantém o acesso às contas antigas que usam Bcrypt.
-# Compara a senha digitada com o hash antigo ou atual.
+# Confere hashes Bcrypt antigos e hashes Werkzeug gerados neste código.
 def conferir_senha(hash_salvo, senha):
     if not hash_salvo:
         return False
     try:
+        # Hashes Bcrypt começam com $2; os demais seguem a conferência do Werkzeug.
         if hash_salvo[:2] == '$2':
             return bcrypt.check_password_hash(hash_salvo, senha)
         else:
@@ -162,19 +164,23 @@ def verificar_nova_senha(id_usuario, senha):
     if id_usuario is not None:
         cursor = con.cursor()
         try:
-            cursor.execute("""SELECT SENHA
+            cursor.execute(
+                """SELECT SENHA
                               FROM USUARIOS
                               WHERE ID_USUARIO = ?""",
-                           (id_usuario,))
+                (id_usuario,),
+            )
             atual = cursor.fetchone()
             if atual and conferir_senha(atual[0], senha):
                 return 'A nova senha não pode ser igual à senha atual.'
 
-            cursor.execute("""SELECT SENHA
+            cursor.execute(
+                """SELECT SENHA
                               FROM HISTORICO_SENHAS
                               WHERE ID_USUARIO = ?
                               ORDER BY ID_HISTORICO DESC""",
-                           (id_usuario,))
+                (id_usuario,),
+            )
             # Confere primeiro os três hashes antigos mais recentes.
             historico = cursor.fetchall()
             quantidade = 0
@@ -198,11 +204,14 @@ def buscar_usuario():
 
     cursor = con.cursor()
     try:
-        cursor.execute("""SELECT ID_USUARIO, NOME, EMAIL, SENHA, TIPO_USUARIO, TELEFONE, CPF,
+        cursor.execute(
+            """SELECT ID_USUARIO, NOME, EMAIL, SENHA, TIPO_USUARIO, TELEFONE, CPF,
                               DATA_NASCIMENTO, TENTATIVAS_LOGIN, BLOQUEADO, ATIVO
                           FROM USUARIOS
                           WHERE ID_USUARIO = ?""",
-                       (session['id_usuario'],))
+            (session['id_usuario'],),
+        )
+        # A ordem do SELECT define os índices: [0] ID, [4] perfil, [9] bloqueio, [10] ativo.
         usuario = cursor.fetchone()
         con.commit()
     except Exception:
@@ -241,7 +250,6 @@ def validar_email(email):
     return True
 
 
-# Calcula os dois dígitos verificadores do CPF.
 # Confere os 11 números e calcula os dois dígitos verificadores do CPF.
 def validar_cpf(cpf):
     if len(cpf) != 11:
@@ -345,20 +353,26 @@ def buscar_aulas():
         aulas = []
         for registro in registros:
             aula = list(registro)
-            cursor.execute("""SELECT NOME, ATIVA
+            cursor.execute(
+                """SELECT NOME, ATIVA
                               FROM MODALIDADES
                               WHERE ID_MODALIDADE = ?""",
-                           (aula[2],))
+                (aula[2],),
+            )
             modalidade = cursor.fetchone()
-            cursor.execute("""SELECT NOME
+            cursor.execute(
+                """SELECT NOME
                               FROM USUARIOS
                               WHERE ID_USUARIO = ?""",
-                           (aula[3],))
+                (aula[3],),
+            )
             professor = cursor.fetchone()
-            cursor.execute("""SELECT ID_INSCRICAO
+            cursor.execute(
+                """SELECT ID_INSCRICAO
                               FROM INSCRICOES
                               WHERE ID_AULA = ? AND ATIVA = 1""",
-                           (aula[0],))
+                (aula[0],),
+            )
             inscritos = cursor.fetchall()
             # Acrescenta à lista os dados usados pelos cartões e botões das telas.
             aula.append(modalidade[0])
@@ -389,19 +403,23 @@ def buscar_aula(id_aula):
 def buscar_inscritos(id_aula):
     cursor = con.cursor()
     try:
-        cursor.execute("""SELECT ID_INSCRICAO, ID_AULA, ID_USUARIO, ATIVA, PRESENTE
+        cursor.execute(
+            """SELECT ID_INSCRICAO, ID_AULA, ID_USUARIO, ATIVA, PRESENTE
                           FROM INSCRICOES
                           WHERE ID_AULA = ? AND ATIVA = 1
                           ORDER BY ID_INSCRICAO""",
-                       (id_aula,))
+            (id_aula,),
+        )
         registros = cursor.fetchall()
         inscritos = []
         for registro in registros:
             inscricao = list(registro)
-            cursor.execute("""SELECT NOME
+            cursor.execute(
+                """SELECT NOME
                               FROM USUARIOS
                               WHERE ID_USUARIO = ?""",
-                           (inscricao[2],))
+                (inscricao[2],),
+            )
             pessoa = cursor.fetchone()
             inscricao.append(pessoa[0])
             inscritos.append(inscricao)
@@ -449,10 +467,12 @@ def cadastro():
                 return render_template('cadastro.html', nascimento_maximo=limite_nascimento())
             # Gera o hash; a senha digitada não é gravada como texto puro.
             hash_senha = generate_password_hash(senha)
-            cursor.execute("""INSERT INTO USUARIOS (NOME, EMAIL, TELEFONE, CPF, DATA_NASCIMENTO,
+            cursor.execute(
+                """INSERT INTO USUARIOS (NOME, EMAIL, TELEFONE, CPF, DATA_NASCIMENTO,
                                   SENHA, TIPO_USUARIO, ATIVO, BLOQUEADO, TENTATIVAS_LOGIN)
                               VALUES (?, ?, ?, ?, ?, ?, 'ALUNO', 1, 0, 0)""",
-                           (nome, email, telefone, cpf, nascimento, hash_senha))
+                (nome, email, telefone, cpf, nascimento, hash_senha),
+            )
             con.commit()
             flash('Cadastro realizado com sucesso! Faça seu login.', 'sucesso')
             return redirect(url_for('login'))
@@ -495,10 +515,12 @@ def login():
                 flash('Usuário bloqueado. Procure o administrador.', 'erro')
             elif conferir_senha(usuario[2], senha):
                 # No login correto, zera o contador de erros da conta.
-                cursor.execute("""UPDATE USUARIOS
+                cursor.execute(
+                    """UPDATE USUARIOS
                                   SET TENTATIVAS_LOGIN = 0
                                   WHERE ID_USUARIO = ?""",
-                               (usuario[0],))
+                    (usuario[0],),
+                )
                 con.commit()
                 session.clear()
                 # Guarda o ID para reconhecer a conta nas próximas páginas.
@@ -517,10 +539,12 @@ def login():
                 else:
                     flash(f'E-mail ou senha incorretos. Tentativa {tentativas} de 3.', 'erro')
                 # Salva o contador e a marca de bloqueio somente nesta conta.
-                cursor.execute("""UPDATE USUARIOS
+                cursor.execute(
+                    """UPDATE USUARIOS
                                   SET TENTATIVAS_LOGIN = ?, BLOQUEADO = ?
                                   WHERE ID_USUARIO = ?""",
-                               (tentativas, bloqueado, usuario[0]))
+                    (tentativas, bloqueado, usuario[0]),
+                )
             con.commit()
         except Exception as e:
             con.rollback()
@@ -590,9 +614,14 @@ def administrador():
     finally:
         cursor.close()
     return render_template(
-        'dashboard.html', usuario=usuario, total_alunos=total_alunos,
-        total_professores=total_professores, modalidades=total_modalidades, aulas=aulas,
-        total_aulas=len(aulas), aulas_hoje=aulas_hoje
+        'dashboard.html',
+        usuario=usuario,
+        total_alunos=total_alunos,
+        total_professores=total_professores,
+        modalidades=total_modalidades,
+        aulas=aulas,
+        total_aulas=len(aulas),
+        aulas_hoje=aulas_hoje,
     )
 
 
@@ -635,8 +664,13 @@ def personal():
                 agendadas = agendadas + 1
     con.commit()
     return render_template(
-        'personal.html', usuario=usuario, aulas=aulas, total_aulas=len(aulas),
-        total_agendadas=agendadas, aulas_hoje=aulas_hoje, total_inscritos=total_inscritos
+        'personal.html',
+        usuario=usuario,
+        aulas=aulas,
+        total_aulas=len(aulas),
+        total_agendadas=agendadas,
+        aulas_hoje=aulas_hoje,
+        total_inscritos=total_inscritos,
     )
 
 
@@ -672,8 +706,10 @@ def perfil():
     if not usuario:
         return redirect(url_for('login'))
     return render_template(
-        'perfil.html', usuario=usuario, titulo='Meu Perfil',
-        nascimento_formatado=formatar_data(usuario[7])
+        'perfil.html',
+        usuario=usuario,
+        titulo='Meu Perfil',
+        nascimento_formatado=formatar_data(usuario[7]),
     )
 
 
@@ -700,11 +736,13 @@ def editar_dados():
                 con.rollback()
                 flash(erro, 'erro')
             else:
-                cursor.execute("""UPDATE USUARIOS
+                cursor.execute(
+                    """UPDATE USUARIOS
                                   SET NOME = ?, EMAIL = ?, TELEFONE = ?, CPF = ?,
                                       DATA_NASCIMENTO = ?
                                   WHERE ID_USUARIO = ?""",
-                               (nome, email, telefone, cpf, nascimento, usuario[0]))
+                    (nome, email, telefone, cpf, nascimento, usuario[0]),
+                )
                 con.commit()
                 flash('Dados atualizados com sucesso!', 'sucesso')
                 return redirect(url_for('perfil'))
@@ -715,8 +753,13 @@ def editar_dados():
         finally:
             cursor.close()
     return render_template(
-        'usuario_form.html', usuario=usuario, pessoa=usuario, proprio=True, editando=True,
-        titulo='Editar meus dados', nascimento_maximo=limite_nascimento()
+        'usuario_form.html',
+        usuario=usuario,
+        pessoa=usuario,
+        proprio=True,
+        editando=True,
+        titulo='Editar meus dados',
+        nascimento_maximo=limite_nascimento(),
     )
 
 
@@ -747,13 +790,17 @@ def alterar_senha():
             else:
                 hash_senha = generate_password_hash(nova)
                 # Guarda o hash anterior para impedir sua reutilização.
-                cursor.execute("""INSERT INTO HISTORICO_SENHAS (ID_USUARIO, SENHA)
+                cursor.execute(
+                    """INSERT INTO HISTORICO_SENHAS (ID_USUARIO, SENHA)
                                   VALUES (?, ?)""",
-                               (usuario[0], usuario[3]))
-                cursor.execute("""UPDATE USUARIOS
+                    (usuario[0], usuario[3]),
+                )
+                cursor.execute(
+                    """UPDATE USUARIOS
                                   SET SENHA = ?
                                   WHERE ID_USUARIO = ?""",
-                               (hash_senha, usuario[0]))
+                    (hash_senha, usuario[0]),
+                )
                 con.commit()
                 flash('Senha alterada com sucesso!', 'sucesso')
                 return redirect(url_for('perfil'))
@@ -780,12 +827,14 @@ def usuarios():
         return redirect(url_for('usuarios'))
     cursor = con.cursor()
     try:
-        cursor.execute("""SELECT ID_USUARIO, NOME, EMAIL, SENHA, TIPO_USUARIO, TELEFONE, CPF,
+        cursor.execute(
+            """SELECT ID_USUARIO, NOME, EMAIL, SENHA, TIPO_USUARIO, TELEFONE, CPF,
                               DATA_NASCIMENTO, TENTATIVAS_LOGIN, BLOQUEADO, ATIVO
                           FROM USUARIOS
                           WHERE TIPO_USUARIO = ?
                           ORDER BY NOME""",
-                       (filtro,))
+            (filtro,),
+        )
         pessoas = cursor.fetchall()
         con.commit()
     finally:
@@ -818,11 +867,13 @@ def usuario_form(id_usuario=None):
         if id_usuario is not None:
             editando = True
             titulo = 'Editar usuário'
-            cursor.execute("""SELECT ID_USUARIO, NOME, EMAIL, SENHA, TIPO_USUARIO, TELEFONE, CPF,
+            cursor.execute(
+                """SELECT ID_USUARIO, NOME, EMAIL, SENHA, TIPO_USUARIO, TELEFONE, CPF,
                                   DATA_NASCIMENTO, TENTATIVAS_LOGIN, BLOQUEADO, ATIVO
                               FROM USUARIOS
                               WHERE ID_USUARIO = ?""",
-                           (id_usuario,))
+                (id_usuario,),
+            )
             pessoa = cursor.fetchone()
             if not pessoa:
                 con.rollback()
@@ -860,24 +911,51 @@ def usuario_form(id_usuario=None):
                     # Na edição, só troca o hash quando uma nova senha foi preenchida.
                     if senha:
                         hash_senha = generate_password_hash(senha)
-                        cursor.execute("""INSERT INTO HISTORICO_SENHAS (ID_USUARIO, SENHA)
+                        cursor.execute(
+                            """INSERT INTO HISTORICO_SENHAS (ID_USUARIO, SENHA)
                                           VALUES (?, ?)""",
-                                       (id_usuario, pessoa[3]))
-                    cursor.execute("""UPDATE USUARIOS
+                            (id_usuario, pessoa[3]),
+                        )
+                    cursor.execute(
+                        """UPDATE USUARIOS
                                       SET NOME = ?, EMAIL = ?, TELEFONE = ?, CPF = ?,
                                           DATA_NASCIMENTO = ?, TIPO_USUARIO = ?, ATIVO = ?,
                                           BLOQUEADO = ?, TENTATIVAS_LOGIN = ?, SENHA = ?
                                       WHERE ID_USUARIO = ?""",
-                                   (nome, email, telefone, cpf, nascimento, tipo, ativo, bloqueado,
-                                   tentativas, hash_senha, id_usuario))
+                        (
+                            nome,
+                            email,
+                            telefone,
+                            cpf,
+                            nascimento,
+                            tipo,
+                            ativo,
+                            bloqueado,
+                            tentativas,
+                            hash_senha,
+                            id_usuario,
+                        ),
+                    )
                 else:
                     hash_senha = generate_password_hash(senha)
-                    cursor.execute("""INSERT INTO USUARIOS (NOME, EMAIL, TELEFONE, CPF,
+                    cursor.execute(
+                        """INSERT INTO USUARIOS (NOME, EMAIL, TELEFONE, CPF,
                                           DATA_NASCIMENTO, TIPO_USUARIO, ATIVO, BLOQUEADO,
                                           TENTATIVAS_LOGIN, SENHA)
                                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                                   (nome, email, telefone, cpf, nascimento, tipo, ativo, bloqueado,
-                                   tentativas, hash_senha))
+                        (
+                            nome,
+                            email,
+                            telefone,
+                            cpf,
+                            nascimento,
+                            tipo,
+                            ativo,
+                            bloqueado,
+                            tentativas,
+                            hash_senha,
+                        ),
+                    )
                 con.commit()
                 flash('Usuário salvo com sucesso!', 'sucesso')
                 return redirect(url_for('usuarios', perfil=tipo))
@@ -890,8 +968,13 @@ def usuario_form(id_usuario=None):
     finally:
         cursor.close()
     return render_template(
-        'usuario_form.html', usuario=usuario, pessoa=pessoa, proprio=False, editando=editando,
-        titulo=titulo, nascimento_maximo=limite_nascimento()
+        'usuario_form.html',
+        usuario=usuario,
+        pessoa=pessoa,
+        proprio=False,
+        editando=editando,
+        titulo=titulo,
+        nascimento_maximo=limite_nascimento(),
     )
 
 
@@ -913,10 +996,12 @@ def modalidades():
         lista = []
         for registro in registros:
             item = list(registro)
-            cursor.execute("""SELECT ID_AULA
+            cursor.execute(
+                """SELECT ID_AULA
                               FROM AULAS
                               WHERE ID_MODALIDADE = ?""",
-                           (item[0],))
+                (item[0],),
+            )
             item.append(len(cursor.fetchall()))
             lista.append(item)
         con.commit()
@@ -942,10 +1027,12 @@ def modalidade_form(id_modalidade=None):
         if id_modalidade is not None:
             editando = True
             titulo = 'Editar modalidade'
-            cursor.execute("""SELECT ID_MODALIDADE, NOME, DESCRICAO, DURACAO, ATIVA
+            cursor.execute(
+                """SELECT ID_MODALIDADE, NOME, DESCRICAO, DURACAO, ATIVA
                               FROM MODALIDADES
                               WHERE ID_MODALIDADE = ?""",
-                           (id_modalidade,))
+                (id_modalidade,),
+            )
             item = cursor.fetchone()
             if not item:
                 con.rollback()
@@ -974,14 +1061,18 @@ def modalidade_form(id_modalidade=None):
                 flash(erro, 'erro')
             else:
                 if editando:
-                    cursor.execute("""UPDATE MODALIDADES
+                    cursor.execute(
+                        """UPDATE MODALIDADES
                                       SET NOME = ?, DESCRICAO = ?, DURACAO = ?, ATIVA = ?
                                       WHERE ID_MODALIDADE = ?""",
-                                   (nome, descricao, duracao, ativa, id_modalidade))
+                        (nome, descricao, duracao, ativa, id_modalidade),
+                    )
                 else:
-                    cursor.execute("""INSERT INTO MODALIDADES (NOME, DESCRICAO, DURACAO, ATIVA)
+                    cursor.execute(
+                        """INSERT INTO MODALIDADES (NOME, DESCRICAO, DURACAO, ATIVA)
                                       VALUES (?, ?, ?, ?)""",
-                                   (nome, descricao, duracao, ativa))
+                        (nome, descricao, duracao, ativa),
+                    )
                 con.commit()
                 flash('Modalidade salva com sucesso!', 'sucesso')
                 return redirect(url_for('modalidades'))
@@ -1009,10 +1100,12 @@ def modalidade_excluir(id_modalidade):
         return redirect(url_for('voltar_home'))
     cursor = con.cursor()
     try:
-        cursor.execute("""SELECT NOME
+        cursor.execute(
+            """SELECT NOME
                           FROM MODALIDADES
                           WHERE ID_MODALIDADE = ?""",
-                       (id_modalidade,))
+            (id_modalidade,),
+        )
         item = cursor.fetchone()
         if not item:
             con.rollback()
@@ -1020,18 +1113,22 @@ def modalidade_excluir(id_modalidade):
             return redirect(url_for('modalidades'))
         if request.method == 'POST':
             # Antes de excluir, verifica se alguma aula utiliza esta modalidade.
-            cursor.execute("""SELECT ID_AULA
+            cursor.execute(
+                """SELECT ID_AULA
                               FROM AULAS
                               WHERE ID_MODALIDADE = ?""",
-                           (id_modalidade,))
+                (id_modalidade,),
+            )
             if cursor.fetchone():
                 con.rollback()
                 flash('Não é possível excluir: a modalidade possui aulas vinculadas.', 'erro')
                 return redirect(url_for('modalidades'))
-            cursor.execute("""DELETE
+            cursor.execute(
+                """DELETE
                               FROM MODALIDADES
                               WHERE ID_MODALIDADE = ?""",
-                           (id_modalidade,))
+                (id_modalidade,),
+            )
             con.commit()
             flash('Modalidade excluída com sucesso!', 'sucesso')
             return redirect(url_for('modalidades'))
@@ -1044,9 +1141,12 @@ def modalidade_excluir(id_modalidade):
     finally:
         cursor.close()
     return render_template(
-        'confirmar.html', usuario=usuario, titulo='Excluir modalidade',
-        mensagem=f'Excluir a modalidade {item[0]}?', voltar=url_for('modalidades'),
-        botao='Excluir modalidade'
+        'confirmar.html',
+        usuario=usuario,
+        titulo='Excluir modalidade',
+        mensagem=f'Excluir a modalidade {item[0]}?',
+        voltar=url_for('modalidades'),
+        botao='Excluir modalidade',
     )
 
 
@@ -1075,6 +1175,8 @@ def relatorio_aulas():
 
     lista = buscar_aulas()
     con.commit()
+
+    # Configura a página e escreve o título do relatório.
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
@@ -1102,9 +1204,15 @@ def relatorio_aulas():
     pdf.set_font('Arial', style='B', size=12)
     pdf.cell(0, 10, f'Total de aulas cadastradas: {len(lista)}', ln=True, align='C')
     pdf_path = app.root_path + '/relatorio_aulas_' + str(usuario[0]) + '.pdf'
+    # Salva o PDF e o envia como download ao navegador.
     pdf.output(pdf_path)
-    return send_file(pdf_path, as_attachment=True, mimetype='application/pdf',
-                     download_name='relatorio_aulas.pdf', max_age=0)
+    return send_file(
+        pdf_path,
+        as_attachment=True,
+        mimetype='application/pdf',
+        download_name='relatorio_aulas.pdf',
+        max_age=0,
+    )
 
 
 # Confere dados, professor, modalidade, capacidade e conflitos de horário.
@@ -1127,38 +1235,50 @@ def validar_aula(id_aula, nome, modalidade, professor, dia, inicio, fim, capacid
     cursor = con.cursor()
     try:
         # Exige modalidade cadastrada e ativa.
-        cursor.execute("""SELECT ATIVA
+        cursor.execute(
+            """SELECT ATIVA
                           FROM MODALIDADES
                           WHERE ID_MODALIDADE = ?""",
-                       (modalidade,))
+            (modalidade,),
+        )
         modo = cursor.fetchone()
         if not modo or modo[0] != 1:
             return 'Selecione uma modalidade cadastrada e ativa.'
         # Exige professor ativo, não bloqueado e com perfil PERSONAL.
-        cursor.execute("""SELECT TIPO_USUARIO, ATIVO, BLOQUEADO
+        cursor.execute(
+            """SELECT TIPO_USUARIO, ATIVO, BLOQUEADO
                           FROM USUARIOS
                           WHERE ID_USUARIO = ?""",
-                       (professor,))
+            (professor,),
+        )
         pessoa = cursor.fetchone()
         if not pessoa or pessoa[0] != 'PERSONAL' or pessoa[1] != 1 or pessoa[2] == 1:
             return 'Instrutor não permitido. Selecione um Professor ativo.'
-        cursor.execute("""SELECT ID_AULA, HORA_INICIO, HORA_FIM, SITUACAO, ID_MODALIDADE
+        cursor.execute(
+            """SELECT ID_AULA, HORA_INICIO, HORA_FIM, SITUACAO, ID_MODALIDADE
                           FROM AULAS
                           WHERE ID_PROFESSOR = ? AND DATA_AULA = ?""",
-                       (professor, dia))
+            (professor, dia),
+        )
         registros = cursor.fetchall()
         # Recusa repetição e sobreposição de horários do mesmo professor.
         for registro in registros:
-            if registro[0] != id_aula and registro[4] == modalidade and str(registro[1])[0:8] == inicio:
+            if (
+                registro[0] != id_aula
+                and registro[4] == modalidade
+                and str(registro[1])[0:8] == inicio
+            ):
                 return 'Já existe uma aula dessa modalidade com esse professor, dia e horário.'
             if registro[0] != id_aula and registro[3] == 'AGENDADA':
                 if inicio < str(registro[2])[0:8] and fim > str(registro[1])[0:8]:
                     return 'O professor já possui aula nesse dia e horário.'
         if id_aula is not None:
-            cursor.execute("""SELECT ID_INSCRICAO
+            cursor.execute(
+                """SELECT ID_INSCRICAO
                               FROM INSCRICOES
                               WHERE ID_AULA = ? AND ATIVA = 1""",
-                           (id_aula,))
+                (id_aula,),
+            )
             # A edição não pode reduzir as vagas abaixo da quantidade de inscritos.
             if capacidade < len(cursor.fetchall()):
                 return 'A capacidade não pode ser menor que o número de inscritos.'
@@ -1223,26 +1343,30 @@ def aula_form(id_aula=None):
             capacidade = int(request.form.get('capacidade', '0'))
             local = request.form.get('local', '').strip()
             # Aplica todas as regras antes de executar INSERT ou UPDATE.
-            erro = validar_aula(id_aula, nome, modalidade, professor, dia, inicio, fim, capacidade, local)
+            erro = validar_aula(
+                id_aula, nome, modalidade, professor, dia, inicio, fim, capacidade, local
+            )
             if erro:
                 con.rollback()
                 flash(erro, 'erro')
             else:
                 if editando:
-                    cursor.execute("""UPDATE AULAS
+                    cursor.execute(
+                        """UPDATE AULAS
                                       SET NOME = ?, ID_MODALIDADE = ?, ID_PROFESSOR = ?,
                                           DATA_AULA = ?, HORA_INICIO = ?, HORA_FIM = ?,
                                           CAPACIDADE = ?, LOCAL_AULA = ?
                                       WHERE ID_AULA = ?""",
-                                   (nome, modalidade, professor, dia, inicio, fim, capacidade,
-                                   local, id_aula))
+                        (nome, modalidade, professor, dia, inicio, fim, capacidade, local, id_aula),
+                    )
                 else:
-                    cursor.execute("""INSERT INTO AULAS (NOME, ID_MODALIDADE, ID_PROFESSOR,
+                    cursor.execute(
+                        """INSERT INTO AULAS (NOME, ID_MODALIDADE, ID_PROFESSOR,
                                           DATA_AULA, HORA_INICIO, HORA_FIM, CAPACIDADE, LOCAL_AULA,
                                           SITUACAO)
                                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'AGENDADA')""",
-                                   (nome, modalidade, professor, dia, inicio, fim, capacidade,
-                                   local))
+                        (nome, modalidade, professor, dia, inicio, fim, capacidade, local),
+                    )
                 con.commit()
                 flash('Aula salva com sucesso!', 'sucesso')
                 return redirect(url_for('aulas'))
@@ -1251,13 +1375,23 @@ def aula_form(id_aula=None):
     except Exception as e:
         con.rollback()
         print(e)
-        flash('Não foi possível salvar. Confira data, horários, modalidade, professor e capacidade.', 'erro')
+        flash(
+            'Não foi possível salvar. Confira data, horários, modalidade, professor e capacidade.',
+            'erro',
+        )
     finally:
         cursor.close()
     return render_template(
-        'aula_form.html', usuario=usuario, item=item, modalidades=modos, professores=professores,
-        editando=editando, titulo=titulo, modalidade_selecionada=modalidade_selecionada,
-        professor_selecionado=professor_selecionado, hoje=momento_atual()[0:10]
+        'aula_form.html',
+        usuario=usuario,
+        item=item,
+        modalidades=modos,
+        professores=professores,
+        editando=editando,
+        titulo=titulo,
+        modalidade_selecionada=modalidade_selecionada,
+        professor_selecionado=professor_selecionado,
+        hoje=momento_atual()[0:10],
     )
 
 
@@ -1275,10 +1409,12 @@ def aula_detalhes(id_aula):
         return redirect(url_for('voltar_home'))
     cursor = con.cursor()
     try:
-        cursor.execute("""SELECT ID_INSCRICAO
+        cursor.execute(
+            """SELECT ID_INSCRICAO
                           FROM INSCRICOES
                           WHERE ID_AULA = ? AND ID_USUARIO = ? AND ATIVA = 1""",
-                       (id_aula, usuario[0]))
+            (id_aula, usuario[0]),
+        )
         inscricao = cursor.fetchone()
         inscritos = []
         if usuario[4] != 'ALUNO':
@@ -1307,10 +1443,12 @@ def aula_cancelar(id_aula):
     if request.method == 'POST':
         cursor = con.cursor()
         try:
-            cursor.execute("""UPDATE AULAS
+            cursor.execute(
+                """UPDATE AULAS
                               SET SITUACAO = 'CANCELADA'
                               WHERE ID_AULA = ?""",
-                           (id_aula,))
+                (id_aula,),
+            )
             con.commit()
             flash('Aula cancelada. O histórico foi preservado.', 'sucesso')
             return redirect(url_for('aulas'))
@@ -1323,8 +1461,12 @@ def aula_cancelar(id_aula):
     else:
         con.commit()
     return render_template(
-        'confirmar.html', usuario=usuario, titulo='Cancelar aula',
-        mensagem=f'Cancelar a aula {aula[1]}?', voltar=url_for('aulas'), botao='Cancelar aula'
+        'confirmar.html',
+        usuario=usuario,
+        titulo='Cancelar aula',
+        mensagem=f'Cancelar a aula {aula[1]}?',
+        voltar=url_for('aulas'),
+        botao='Cancelar aula',
     )
 
 
@@ -1346,10 +1488,12 @@ def inscrever(id_aula):
             erro = 'Inscrição indisponível para esta aula.'
         elif aula[12] >= aula[7]:
             erro = 'Aula lotada. Não há vagas disponíveis.'
-        cursor.execute("""SELECT ID_INSCRICAO, ATIVA
+        cursor.execute(
+            """SELECT ID_INSCRICAO, ATIVA
                           FROM INSCRICOES
                           WHERE ID_AULA = ? AND ID_USUARIO = ?""",
-                       (id_aula, usuario[0]))
+            (id_aula, usuario[0]),
+        )
         inscricao = cursor.fetchone()
         # Impede repetir uma inscrição que já está ativa.
         if inscricao and inscricao[1] == 1:
@@ -1360,14 +1504,18 @@ def inscrever(id_aula):
         else:
             # Se já houve inscrição cancelada, reativa o registro em vez de duplicá-lo.
             if inscricao:
-                cursor.execute("""UPDATE INSCRICOES
+                cursor.execute(
+                    """UPDATE INSCRICOES
                                   SET ATIVA = 1, PRESENTE = ?
                                   WHERE ID_INSCRICAO = ?""",
-                               (None, inscricao[0]))
+                    (None, inscricao[0]),
+                )
             else:
-                cursor.execute("""INSERT INTO INSCRICOES (ID_AULA, ID_USUARIO, ATIVA)
+                cursor.execute(
+                    """INSERT INTO INSCRICOES (ID_AULA, ID_USUARIO, ATIVA)
                                   VALUES (?, ?, 1)""",
-                               (id_aula, usuario[0]))
+                    (id_aula, usuario[0]),
+                )
             con.commit()
             flash('Inscrição realizada com sucesso!', 'sucesso')
     except Exception as e:
@@ -1390,10 +1538,12 @@ def minhas_aulas():
         return redirect(url_for('voltar_home'))
     cursor = con.cursor()
     try:
-        cursor.execute("""SELECT ID_AULA
+        cursor.execute(
+            """SELECT ID_AULA
                           FROM INSCRICOES
                           WHERE ID_USUARIO = ? AND ATIVA = 1""",
-                       (usuario[0],))
+            (usuario[0],),
+        )
         inscricoes = cursor.fetchall()
         aulas = []
         for aula in buscar_aulas():
@@ -1417,10 +1567,12 @@ def cancelar_inscricao(id_aula):
     cursor = con.cursor()
     try:
         aula = buscar_aula(id_aula)
-        cursor.execute("""SELECT ID_INSCRICAO
+        cursor.execute(
+            """SELECT ID_INSCRICAO
                           FROM INSCRICOES
                           WHERE ID_AULA = ? AND ID_USUARIO = ? AND ATIVA = 1""",
-                       (id_aula, usuario[0]))
+            (id_aula, usuario[0]),
+        )
         inscricao = cursor.fetchone()
         if not aula or not inscricao:
             con.rollback()
@@ -1429,10 +1581,12 @@ def cancelar_inscricao(id_aula):
         # Somente o envio da confirmação efetiva o cancelamento.
         if request.method == 'POST':
             # Mantém o registro e apenas marca a inscrição como inativa.
-            cursor.execute("""UPDATE INSCRICOES
+            cursor.execute(
+                """UPDATE INSCRICOES
                               SET ATIVA = 0
                               WHERE ID_INSCRICAO = ?""",
-                           (inscricao[0],))
+                (inscricao[0],),
+            )
             con.commit()
             flash('Inscrição cancelada com sucesso!', 'sucesso')
             return redirect(url_for('minhas_aulas'))
@@ -1445,9 +1599,12 @@ def cancelar_inscricao(id_aula):
     finally:
         cursor.close()
     return render_template(
-        'confirmar.html', usuario=usuario, titulo='Cancelar inscrição',
-        mensagem=f'Cancelar sua inscrição em {aula[1]}?', voltar=url_for('minhas_aulas'),
-        botao='Confirmar cancelamento'
+        'confirmar.html',
+        usuario=usuario,
+        titulo='Cancelar inscrição',
+        mensagem=f'Cancelar sua inscrição em {aula[1]}?',
+        voltar=url_for('minhas_aulas'),
+        botao='Confirmar cancelamento',
     )
 
 
@@ -1477,10 +1634,12 @@ def chamada(id_aula):
                     presente = 1
                 elif valor == '0':
                     presente = 0
-                cursor.execute("""UPDATE INSCRICOES
+                cursor.execute(
+                    """UPDATE INSCRICOES
                                   SET PRESENTE = ?
                                   WHERE ID_INSCRICAO = ?""",
-                               (presente, inscricao[0]))
+                    (presente, inscricao[0]),
+                )
             con.commit()
             flash('Chamada salva com sucesso!', 'sucesso')
             return redirect(url_for('chamada', id_aula=id_aula))
@@ -1517,10 +1676,12 @@ def aula_concluir(id_aula):
         cursor = con.cursor()
         try:
             # Marca a conclusão sem excluir a aula nem suas inscrições.
-            cursor.execute("""UPDATE AULAS
+            cursor.execute(
+                """UPDATE AULAS
                               SET SITUACAO = 'CONCLUIDA'
                               WHERE ID_AULA = ?""",
-                           (id_aula,))
+                (id_aula,),
+            )
             con.commit()
             flash('Aula concluída. Inscrições e presenças foram preservadas.', 'sucesso')
             return redirect(url_for('aula_detalhes', id_aula=id_aula))
@@ -1533,13 +1694,16 @@ def aula_concluir(id_aula):
     else:
         con.commit()
     return render_template(
-        'confirmar.html', usuario=usuario, titulo='Concluir aula',
-        mensagem=f'Concluir a aula {aula[1]}?', voltar=url_for('aula_detalhes', id_aula=id_aula),
-        botao='Concluir aula'
+        'confirmar.html',
+        usuario=usuario,
+        titulo='Concluir aula',
+        mensagem=f'Concluir a aula {aula[1]}?',
+        voltar=url_for('aula_detalhes', id_aula=id_aula),
+        botao='Concluir aula',
     )
 
 
-# Erro de conexão
+# Tratamento de erros do Firebird
 # Desfaz a transação pendente e mostra uma página de erro do banco.
 @app.errorhandler(fdb.DatabaseError)
 def erro_banco(erro):
@@ -1548,10 +1712,14 @@ def erro_banco(erro):
     except Exception:
         pass
     print(erro)
-    return render_template(
-        'erro.html', titulo='Falha no banco de dados',
-        mensagem='Não foi possível concluir a operação. Confira a conexão e o erro no terminal.'
-    ), 503
+    return (
+        render_template(
+            'erro.html',
+            titulo='Falha no banco de dados',
+            mensagem='Não foi possível concluir a operação. Confira a conexão e o erro no terminal.',
+        ),
+        503,
+    )
 
 
 # Execução
