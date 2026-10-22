@@ -1,0 +1,94 @@
+AUTOMATIC FIT - BANCO E CÓDIGO REVISADOS COM AS AULAS
+Revisão de 22/10/2026
+
+ARQUIVOS DO ZIP
+
+- main.py comentado, templates, static e requirements.txt.
+- BANCO.FDB: NOVA CÓPIA SIMPLIFICADA com os dados do arquivo enviado.
+- AutomaticFit-Aulas.sql: criação das mesmas cinco tabelas em um banco VAZIO.
+- CONFERENCIA-DAS-AULAS.txt: conteúdo consultado e limite da comparação.
+
+COMO USAR
+
+1. Extraia em uma pasta NOVA. Preserve o seu banco anterior como cópia.
+2. Use o BANCO.FDB deste ZIP com o main.py deste ZIP.
+3. database = 'BANCO.FDB' procura o arquivo na pasta de execução.
+   Abra o terminal na pasta que contém main.py e BANCO.FDB.
+   No PyCharm, configure o diretório de trabalho nessa mesma pasta.
+   Se preferir, informe o caminho completo em database, como no exemplo da aula.
+4. Confira host, user e password no começo de main.py.
+   A senha de conexão depende do seu servidor Firebird, não da conta do site.
+5. Inicie o Firebird 4.0.4 e instale as dependências:
+   python -m pip install -r requirements.txt
+6. Execute python main.py e abra http://127.0.0.1:5000.
+
+NÃO execute o SQL sobre BANCO.FDB: ele já tem as tabelas e os dados.
+O SQL é para criar OUTRO banco vazio, configurado como UTF8 no DBeaver.
+O SQL não inclui os dados pessoais existentes no arquivo FDB.
+Não sobrescreva um banco do seu computador que tenha cadastros mais recentes.
+A cópia entregue preserva os dados do arquivo que foi enviado neste chat.
+
+O QUE FOI SIMPLIFICADO NO BANCO
+
+Mantidas as cinco tabelas e os 34 campos:
+USUARIOS, MODALIDADES, HISTORICO_SENHAS, AULAS e INSCRICOES.
+Mantidas cinco PKs e cinco FKs. Os IDs são automáticos.
+Foram preservados os registros, IDs, vínculos e hashes do arquivo enviado.
+Não há triggers de aplicação, exceções personalizadas, CHECKs,
+restrições UNIQUE adicionais ou índices calculados nesta nova base.
+Existem os índices e geradores internos normais das PKs/FKs/IDs automáticos;
+esses são criados pelo próprio Firebird, não por regras avançadas nossas.
+
+As validações de duplicidade, capacidade, perfil, atividade, bloqueio,
+datas e horários continuam no Python. A FK impede vínculos inexistentes.
+Não exclua as verificações do main.py: o banco simplificado depende delas
+para as regras que não são garantidas apenas por PK, FK e NOT NULL.
+
+MAIN.PY
+
+Mantidos Flask, fdb, Werkzeug e Bcrypt do exemplo de biblioteca.
+Adicionados FPDF e send_file conforme a aula de relatórios enviada.
+Mantidos os comentários curtos, SQL direto, funções, if, for e listas.
+Não foram adicionados datetime, secrets ou Path.
+A única dependência nova é fpdf==1.7.2, usada no relatório.
+A rotina de relógio agora usa CURRENT_DATE e EXTRACT, presentes na aula 08.
+RDB$DATABASE também aparece nos exemplos dessa aula.
+CURRENT_TIME fornece a hora atual para EXTRACT(HOUR/MINUTE/SECOND ...).
+Esse nome específico NÃO aparece explicitamente nas tabelas de funções
+consultadas: é o complemento mínimo mantido para os horários funcionarem.
+Assim, não afirmamos que cada nome do código foi mostrado literalmente na aula.
+A validação manual de datas, horários, CPF, telefone e maioridade permanece.
+
+Os recursos de JOIN e agregação estudados estão disponíveis, mas não foram
+adicionados apenas para aumentar o código: as consultas simples já funcionam.
+
+TESTES
+
+Verificados no Firebird 4.0.4, usando uma cópia do BANCO.FDB simplificado:
+19 templates, 47 aberturas de páginas e os fluxos de cadastro, login,
+bloqueio, perfis, edição de usuário, senha/histórico, modalidades,
+aulas, sobreposição, capacidade, vagas, inscrição, cancelamento,
+chamada, conclusão e logout. Não dependem dos triggers retirados.
+Conferidas 5.544 combinações de datas e os limites de idade/horários.
+O arquivo original enviado permanece preservado, sem alteração.
+
+O PDF anterior é uma explicação de uma revisão anterior do código.
+Com os comentários e ajustes atuais, seus números de linha são diferentes.
+
+RELATÓRIO DE AULAS EM PDF
+
+Entre como administrador, abra Aulas e clique em Baixar relatório PDF.
+A rota GET /aulas/relatorio exige login e perfil de administrador.
+O PDF mostra todas as aulas, modalidade, professor, data, horário,
+local, inscritos/capacidade, situação e o total de aulas cadastradas.
+Usa FPDF, set_font, cell, line, ln, output e send_file do exemplo enviado.
+Usa também multi_cell para quebrar textos longos sem cortar as informações.
+Sem aulas, gera um PDF informando que não há aulas cadastradas.
+A fonte Arial básica aceita acentos portugueses; caracteres fora de latin-1
+(como emojis) são substituídos por ? apenas no PDF, sem mudar o banco.
+O PDF é gerado na pasta do projeto com o ID do administrador no nome.
+É regenerado a cada download; não é necessário criá-lo manualmente.
+
+O relatório foi testado com dados, sem dados, com textos longos, acentos,
+caracteres não latinos e várias páginas. Alunos, professores e visitantes
+não conseguem baixá-lo. Nenhuma senha ou CPF é incluído no relatório.

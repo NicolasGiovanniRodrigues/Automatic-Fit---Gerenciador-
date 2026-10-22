@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>Automatic Fit — Automatic Fit</title>
+        <link rel="stylesheet"
+              href="{{ url_for('static',filename='css/app.css') }}">
+    </head>
+    <body>
+        <div class="app-shell">
+            <header class="topbar">
+                <a class="brand" href="{{ url_for('voltar_home') }}">
+                    <img src="{{ url_for('static',filename='img/logo.png') }}" alt="">
+                    <span>
+                        Automatic
+                        <b>
+                            Fit
+                        </b>
+                    </span>
+                </a>
+                <div class="top-actions">
+                    <form method="post" action="{{ url_for('logout') }}">
+                        <button class="logout" type="submit">↪ Sair</button>
+                    </form>
+                    <span class="role">{% if usuario[4] == "ALUNO" %}Aluno{% elif usuario[4] == "PERSONAL" %}Professor{% else %}Administrador{% endif %}</span>
+                </div>
+            </header>
+            <div class="workspace">
+                {% if usuario[4] != "ALUNO" %}
+                    <aside class="sidebar">
+                        <nav>
+                            <a class="{% if request.endpoint in ['administrador','personal'] %}selected{% else %}{% endif %}"
+                               href="{{ url_for('voltar_home') }}">
+                                <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M3 10 12 3l9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z" />
+                                </svg>
+                                Início
+                            </a>
+                            {% if usuario[4]=="ADMINISTRADOR" %}
+                                <a class="{% if request.endpoint in ['modalidades','modalidade_form','modalidade_excluir'] %}selected{% else %}{% endif %}"
+                                   href="{{ url_for('modalidades') }}">
+                                    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="m5 3 4 4M3 5l4 4m10 6 4 4m-6-2 4 4M7 3l2-2 4 4-2 2m-8 0L1 9l4 4 2-2m6 2 4-4m-8 8 4-4m4 8 2 2 4-4-2-2" />
+                                    </svg>
+                                    Modalidades
+                                </a>
+                                <a class="{% if request.endpoint in ['usuarios','usuario_form'] and request.args.get('perfil', 'ALUNO')=='ALUNO' %}selected{% else %}{% endif %}"
+                                   href="{{ url_for('usuarios',perfil='ALUNO') }}">
+                                    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <circle cx="12" cy="7" r="4" />
+                                        <path d="M4 21v-3a8 8 0 0 1 16 0v3" />
+                                    </svg>
+                                    Alunos
+                                </a>
+                                <a class="{% if request.endpoint=='usuarios' and request.args.get('perfil')=='PERSONAL' %}selected{% else %}{% endif %}"
+                                   href="{{ url_for('usuarios',perfil='PERSONAL') }}">
+                                    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="m5 3 4 4M3 5l4 4m10 6 4 4m-6-2 4 4M7 3l2-2 4 4-2 2m-8 0L1 9l4 4 2-2m6 2 4-4m-8 8 4-4m4 8 2 2 4-4-2-2" />
+                                    </svg>
+                                    Professores
+                                </a>
+                                <a class="{% if request.endpoint in ['aulas','aula_form','aula_detalhes','aula_cancelar','chamada'] %}selected{% else %}{% endif %}"
+                                   href="{{ url_for('aulas') }}">
+                                    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <rect x="3" y="5" width="18" height="16" rx="2" />
+                                        <path d="M3 10h18M7 3v4m10-4v4m-10 7h2m3 0h2m3 0h1m-11 4h2m3 0h2m3 0h1" />
+                                    </svg>
+                                    Aulas
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('agenda') }}">
+                                    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <rect x="3" y="5" width="18" height="16" rx="2" />
+                                        <path d="M3 10h18M7 3v4m10-4v4m-10 7h2m3 0h2m3 0h1m-11 4h2m3 0h2m3 0h1" />
+                                    </svg>
+                                    Agenda e Aulas
+                                </a>
+                                <a href="{{ url_for('presencas') }}">
+                                    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <circle cx="12" cy="7" r="4" />
+                                        <path d="M4 21v-3a8 8 0 0 1 16 0v3" />
+                                    </svg>
+                                    Alunos e Presenças
+                                </a>
+                            {% endif %}
+                            <a class="{% if request.endpoint in ['perfil','editar_dados','alterar_senha'] %}selected{% else %}{% endif %}"
+                               href="{{ url_for('perfil') }}">
+                                <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle cx="12" cy="7" r="4" />
+                                    <path d="M4 21v-3a8 8 0 0 1 16 0v3" />
+                                </svg>
+                                {% if usuario[4]=="ADMINISTRADOR" %}Minha conta{% else %}Perfil{% endif %}
+                            </a>
+                        </nav>
+                    </aside>
+                {% endif %}
+                <main class="content {% if usuario[4]=='ALUNO' %}student-content{% else %}{% endif %}">
+                    {% if usuario[4]=="ALUNO" %}
+                        <nav class="student-nav">
+                            <a href="{{ url_for('aluno') }}">Grade de Aulas</a>
+                            <a href="{{ url_for('minhas_aulas') }}">Minhas Aulas</a>
+                            <a href="{{ url_for('perfil') }}">Perfil</a>
+                        </nav>
+                    {% endif %}
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="message {{ category }}"
+                                     role="status">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    <h1>Minhas Aulas</h1>
+                    <p class="subtitle">Olá, {{ usuario[1] }}! Acompanhe seus treinos e gerencie suas inscrições.</p>
+                    <div class="class-grid">
+                        {% for a in aulas %}
+                            <article class="card class-card">
+                                <span class="badge">{{ a[9] }}</span>
+                                <h2>{{ a[1] }}</h2>
+                                <p>{{ a[10] }} · {{ a[11] }}</p>
+                                <p>{{ a[14] }} · {{ a[15] }}–{{ a[16] }}</p>
+                                <div class="row-actions">
+                                    <a href="{{ url_for('aula_detalhes',id_aula=a[0]) }}">Ver detalhes</a>
+                                    <a class="danger-link"
+                                       href="{{ url_for('cancelar_inscricao',id_aula=a[0]) }}">Cancelar inscrição</a>
+                                </div>
+                            </article>
+                        {% else %}
+                            <section class="card empty">
+                                <h2>Você ainda não tem aulas inscritas.</h2>
+                                <a href="{{ url_for('aluno') }}">Explorar grade de aulas</a>
+                            </section>
+                        {% endfor %}
+                    </div>
+                </main>
+            </div>
+        </div>
+        <script src="{{ url_for('static',filename='js/app.js') }}"></script>
+    </body>
+</html>

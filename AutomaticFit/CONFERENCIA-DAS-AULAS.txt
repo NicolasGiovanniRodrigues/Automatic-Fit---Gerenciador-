@@ -1,0 +1,54 @@
+CONFERÊNCIA DO MATERIAL DA PROFESSORA - 22/10/2026
+
+01-03: conceitos, entidades, atributos, cardinalidades, PK, FK e modelagem.
+04: CREATE/ALTER/DROP TABLE, PRIMARY KEY, ID automático, NOT NULL, DEFAULT, FK/REFERENCES.
+05-07: INSERT, SELECT, UPDATE, DELETE, WHERE, ORDER BY e operadores.
+06: INTEGER, SMALLINT, VARCHAR, DATE, TIME e outros tipos do Firebird.
+08: COUNT/SUM/AVG/MIN/MAX, agrupamentos, funções de texto e data, CURRENT_DATE, EXTRACT e exemplos com RDB$DATABASE.
+09: INNER JOIN, LEFT JOIN e RIGHT JOIN.
+
+A aula 01 cita triggers como capacidade do Firebird, mas uma citação não é uma aula de como programar triggers. Não há programação de triggers, CREATE EXCEPTION, CHECK ou índices calculados nos exemplos examinados. Esses recursos foram retirados da base entregue.
+
+Não foram usadas restrições UNIQUE adicionais porque não encontramos essa definição de DDL no material. A duplicidade é validada no Python.
+
+O complemento CURRENT_TIME, usado apenas para obter o relógio junto de EXTRACT, não aparece nominalmente nos exemplos extraídos. Ele está identificado no main.py e no LEIA-ME. Não prometemos equivalência literal entre cada palavra do projeto e o material. A avaliação dos recursos permitidos cabe à professora.
+
+Fontes consultadas: páginas e dados das tabelas do Gamma (inclusive as tabelas que não aparecem no HTML inicial).
+https://gamma.app/docs/01-Introducao-aos-Sistemas-Gerenciadores-de-Banco-de-Dados-SGBD-uao4h8ircdv6tw5
+https://gamma.app/docs/02-A-Importancia-do-Planejamento-e-Modelagem-de-Dados-yiegnm2g7mhpmfo
+https://gamma.app/docs/03-Relacionamentos-1-para-N-em-Bancos-de-Dados-bo5fvqe0tz2hehw
+https://gamma.app/docs/04-SQLStructured-Query-Language-DDL-xwukx830q66wdy5
+https://gamma.app/docs/05-SQLStructured-Query-Language-DML-hj1buqo6l0iv6h3
+https://gamma.app/docs/06-SQLStructured-Query-Language-pb1bd1jt5jpapn7
+https://gamma.app/docs/07-SQLStructured-Query-Language-nskysdsxeatbwqk
+https://gamma.app/docs/08-Introducao-as-funcoes-de-agregacao-534c5ee8kr0ebpo
+https://gamma.app/docs/09-Introducao-a-juncao-de-tabelas-2rxj75td9nqhyfq
+
+MATERIAIS DE PYTHON ENVIADOS
+
+Introducao FireBanco Read.pdf: Flask, fdb, conexão global, cursor,
+execute/fetchall/close, templates, tuplas e repetições do Jinja.
+03-Implementando-o-CRUD-Create.pdf: GET/POST, request.form, parâmetros ?,
+INSERT, validação antes de gravar, commit e mensagens.
+04-Implementando-o-CRUD-Update.pdf: SELECT por ID, formulário preenchido,
+UPDATE com parâmetros e redirecionamento.
+05-Implementando-o-CRUD-Delete.pdf: exclusão por ID, POST, commit/rollback,
+try/finally, flash e url_for.
+Guia_de_Sessões_Flask.pdf: session, secret_key, acesso protegido e logout.
+Criptografia_de_Senhas_com_Flask-Bcrypt.pdf: hash e conferência de senha.
+Python_PDF_Report_Automation.pdf e exemplo enviado no chat: FPDF,
+configuração de página/fonte, cell, ln, line, output e send_file.
+Flask_Image_Architecture.pdf: arquivos, uploads, RETURNING e imagens;
+a apresentação também cita gráficos e e-mail. Esses recursos não foram
+adicionados apenas por aparecerem no material, pois não são necessários
+para os fluxos pedidos da academia.
+
+As regras específicas da academia são adaptações com funções, if, for,
+listas, textos e SQL direto. O projeto tem mais regras que a biblioteca,
+portanto não é uma cópia literal do exercício.
+Além de CURRENT_TIME, o relatório usa multi_cell para quebrar linhas,
+encode/decode para limitar o texto à fonte básica e opções de send_file
+para definir nome de download e impedir cache antigo. São complementos
+pequenos identificados, não recursos que afirmamos ter sido demonstrados
+literalmente nas apresentações. Não há novas classes próprias, ORM,
+framework de autenticação ou migrações no código entregue.

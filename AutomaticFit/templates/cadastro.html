@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>Cadastro — Automatic Fit</title>
+        <link rel="stylesheet"
+              href="{{ url_for('static',filename='css/app.css') }}">
+    </head>
+    <body class="auth-body">
+        <main class="auth-layout">
+            <section class="auth-brand">
+                <a href="{{ url_for('index') }}">
+                    <img src="{{ url_for('static',filename='img/logo.png') }}"
+                         alt="Automatic Fit">
+                </a>
+                <h1>
+                    Automatic
+                    <b>
+                        Fit
+                    </b>
+                </h1>
+                <p>
+                    Gerencie aulas, horários e inscrições com
+                    <br>
+                    praticidade.
+                </p>
+            </section>
+            <section class="auth-card register">
+                <img class="auth-logo"
+                     src="{{ url_for('static',filename='img/logo.png') }}"
+                     alt="">
+                <h2>Crie sua conta</h2>
+                <p class="subtitle">Preencha os dados abaixo para começar. Campos com * são obrigatórios.</p>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="message {{ category }}" role="status">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                <form method="post">
+                    <div class="auth-control">
+                        <label class="field-caption"
+                               for="email">E-mail <span class="obrigatorio">*</span></label>
+                        <label class="auth-field">
+                            <span class="field-icon">✉</span>
+                            <input type="email"
+                                   name="email"
+                                   placeholder="E-mail"
+                                   required
+                                   maxlength="100"
+                                   value="{{ request.form.get('email', '') }}"
+                                   autocomplete="email"
+                                   id="email">
+                        </label>
+                    </div>
+                    <div class="auth-control">
+                        <label class="field-caption"
+                               for="nome">Nome completo <span class="obrigatorio">*</span></label>
+                        <label class="auth-field">
+                            <span class="field-icon">♙</span>
+                            <input name="nome"
+                                   placeholder="Nome completo"
+                                   maxlength="254"
+                                   required
+                                   autocomplete="name"
+                                   value="{{ request.form.get('nome', '') }}"
+                                   id="nome">
+                        </label>
+                    </div>
+                    <div class="auth-control">
+                        <label class="field-caption"
+                               for="telefone">Telefone com DDD (opcional)</label>
+                        <label class="auth-field">
+                            <span class="field-icon">♧</span>
+                            <input name="telefone"
+                                   placeholder="Telefone"
+                                   autocomplete="tel"
+                                   value="{{ request.form.get('telefone', '') }}"
+                                   type="tel"
+                                   maxlength="11"
+                                   minlength="10"
+                                   inputmode="numeric"
+                                   pattern="[0-9]{10,11}"
+                                   data-numerico="11"
+                                   title="Informe DDD e telefone: 10 ou 11 números, sem +55."
+                                   id="telefone">
+                        </label>
+                    </div>
+                    <div class="auth-control">
+                        <label class="field-caption"
+                               for="cpf">CPF <span class="obrigatorio">*</span></label>
+                        <label class="auth-field">
+                            <span class="field-icon">▤</span>
+                            <input name="cpf"
+                                   placeholder="CPF"
+                                   required
+                                   value="{{ request.form.get('cpf', '') }}"
+                                   type="text"
+                                   maxlength="11"
+                                   minlength="11"
+                                   inputmode="numeric"
+                                   pattern="[0-9]{11}"
+                                   data-numerico="11"
+                                   title="Informe 11 números de um CPF válido."
+                                   id="cpf">
+                        </label>
+                    </div>
+                    <label class="auth-date">
+                        Data de nascimento <span class="obrigatorio">*</span>
+                        <input type="date"
+                               name="data_nascimento"
+                               required
+                               value="{{ request.form.get('data_nascimento', '') }}"
+                               max="{{ nascimento_maximo }}"
+                               id="data_nascimento"
+                               title="É necessário ter 18 anos completos. Datas futuras não são permitidas.">
+                    </label>
+                    <div class="auth-control">
+                        <label class="field-caption"
+                               for="senha">Senha <span class="obrigatorio">*</span></label>
+                        <label class="auth-field password-field">
+                            <span class="field-icon">
+                                <img src="{{ url_for('static',filename='img/cadeado.png') }}"
+                                     width="15"
+                                     height="15"
+                                     alt="">
+                            </span>
+                            <input type="password"
+                                   id="senha"
+                                   name="senha"
+                                   placeholder="Senha"
+                                   required
+                                   minlength="8"
+                                   autocomplete="new-password"
+                                   maxlength="128">
+                            <button type="button"
+                                    id="mostrar-senha"
+                                    class="show-password"
+                                    aria-label="Mostrar ou ocultar senha">◉</button>
+                        </label>
+                    </div>
+                    <div class="auth-control">
+                        <label class="field-caption"
+                               for="confirmar_senha">Confirmar senha <span class="obrigatorio">*</span></label>
+                        <label class="auth-field">
+                            <span class="field-icon">
+                                <img src="{{ url_for('static',filename='img/cadeado.png') }}"
+                                     width="15"
+                                     height="15"
+                                     alt="">
+                            </span>
+                            <input type="password"
+                                   name="confirmar_senha"
+                                   placeholder="Confirmar senha"
+                                   minlength="8"
+                                   autocomplete="new-password"
+                                   required
+                                   maxlength="128"
+                                   id="confirmar_senha">
+                        </label>
+                    </div>
+                    <p class="help">De 8 a 128 caracteres: maiúscula, minúscula, número e símbolo.</p>
+                    <button class="button primary full" type="submit">Cadastrar-se</button>
+                    <p class="auth-link">
+                        Já tem uma conta?
+                        <a href="{{ url_for('login') }}">Fazer Login</a>
+                    </p>
+                </form>
+            </section>
+        </main>
+        <script src="{{ url_for('static',filename='js/app.js') }}"></script>
+    </body>
+</html>
