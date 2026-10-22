@@ -20,10 +20,10 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'chavesecreta'
 bcrypt = Bcrypt(app)
 
-# Execute na pasta do main.py ou informe o caminho completo do banco simplificado.
+
 host = 'localhost'
 database = 'BANCO.FDB'
-user = 'sysdba'
+user = 'SYSDBA'
 password = 'sysdba'
 
 # Abre a conexão usada pelas consultas e gravações do sistema.
